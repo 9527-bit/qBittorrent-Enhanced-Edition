@@ -2250,7 +2250,7 @@ Non use caracteres especiais no nome da categoría.</translation>
     </message>
     <message>
         <source>Size</source>
-        <translation>Tamaño</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

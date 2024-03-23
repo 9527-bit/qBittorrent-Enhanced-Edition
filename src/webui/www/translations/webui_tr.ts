@@ -571,6 +571,10 @@
         <source>RSS</source>
         <translation>RSS</translation>
     </message>
+    <message>
+        <source>Filters Sidebar</source>
+        <translation type="vanished">Süzgeçler Kenar Çubuğu</translation>
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -1476,6 +1480,22 @@
         <source>Server-side request forgery (SSRF) mitigation:</source>
         <translation>Sunucu tarafı istek sahteciliği (SSRF) azaltma:</translation>
     </message>
+    <message>
+        <source>Disk queue size:</source>
+        <translation type="vanished">Disk kuyruk boyutu:</translation>
+    </message>
+    <message>
+        <source>Log performance warnings</source>
+        <translation type="vanished">Performans uyarılarını günlükle</translation>
+    </message>
+    <message>
+        <source>Maximum outstanding requests to a single peer:</source>
+        <translation type="vanished">Tek bir kişi için bekleyen en fazla istek sayısı:</translation>
+    </message>
+    <message>
+        <source>Max active checking torrents:</source>
+        <translation type="vanished">En fazla etkin denetlenen torrent:</translation>
+    </message>
 </context>
 <context>
     <name>PeerListWidget</name>
@@ -2248,8 +2268,12 @@
         <translation>İlerleme</translation>
     </message>
     <message>
+        <source>Total Size</source>
+        <translation type="vanished">Toplam Boyut</translation>
+    </message>
+    <message>
         <source>Size</source>
-        <translation>Boyut</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>
@@ -2292,7 +2316,7 @@
     </message>
     <message>
         <source>Queued</source>
-        <translation>Kuyrukta</translation>
+        <translation>Kuyruğa Alındı</translation>
     </message>
     <message>
         <source>Errored</source>

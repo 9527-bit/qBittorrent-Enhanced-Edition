@@ -2249,7 +2249,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation>Veľkosť</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

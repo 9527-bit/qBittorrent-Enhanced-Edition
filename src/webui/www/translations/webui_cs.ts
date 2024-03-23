@@ -571,6 +571,10 @@
         <source>RSS</source>
         <translation>RSS</translation>
     </message>
+    <message>
+        <source>Filters Sidebar</source>
+        <translation type="vanished">Filtry boční panel</translation>
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -1476,6 +1480,22 @@
         <source>Server-side request forgery (SSRF) mitigation:</source>
         <translation>Zamezení falšování požadavků na straně serveru (SSRF):</translation>
     </message>
+    <message>
+        <source>Disk queue size:</source>
+        <translation type="vanished">Velikost diskové fronty:</translation>
+    </message>
+    <message>
+        <source>Log performance warnings</source>
+        <translation type="vanished">Log výkonnostních varování</translation>
+    </message>
+    <message>
+        <source>Maximum outstanding requests to a single peer:</source>
+        <translation type="vanished">Maximum nezpracovaných požadavků na jeden peer:</translation>
+    </message>
+    <message>
+        <source>Max active checking torrents:</source>
+        <translation type="vanished">Maximum souběžně kontrolovaných torrentů:</translation>
+    </message>
 </context>
 <context>
     <name>PeerListWidget</name>
@@ -2248,8 +2268,12 @@
         <translation>Průběh</translation>
     </message>
     <message>
+        <source>Total Size</source>
+        <translation type="vanished">Celková velikost</translation>
+    </message>
+    <message>
         <source>Size</source>
-        <translation>Velikost</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

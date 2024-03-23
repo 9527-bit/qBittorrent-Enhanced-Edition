@@ -571,6 +571,10 @@
         <source>RSS</source>
         <translation>RSS</translation>
     </message>
+    <message>
+        <source>Filters Sidebar</source>
+        <translation type="vanished">Szűrők oldalsáv</translation>
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -1476,6 +1480,22 @@
         <source>Server-side request forgery (SSRF) mitigation:</source>
         <translation>Védekezés a kiszolgálóoldali kéréshamisítás (SSRF) ellen:</translation>
     </message>
+    <message>
+        <source>Disk queue size:</source>
+        <translation type="vanished">Lemez sorbanállás mérete:</translation>
+    </message>
+    <message>
+        <source>Log performance warnings</source>
+        <translation type="vanished">Teljesítmény figyelmeztetések naplózása</translation>
+    </message>
+    <message>
+        <source>Maximum outstanding requests to a single peer:</source>
+        <translation type="vanished">Maximális függőben lévő kérések egyetlen peerhez:</translation>
+    </message>
+    <message>
+        <source>Max active checking torrents:</source>
+        <translation type="vanished">Torrentek aktív ellenőrzésének maximális száma:</translation>
+    </message>
 </context>
 <context>
     <name>PeerListWidget</name>
@@ -2248,8 +2268,12 @@
         <translation>Folyamat</translation>
     </message>
     <message>
+        <source>Total Size</source>
+        <translation type="vanished">Teljes méret</translation>
+    </message>
+    <message>
         <source>Size</source>
-        <translation>Méret</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

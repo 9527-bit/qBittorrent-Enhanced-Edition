@@ -1,19 +1,20 @@
 #!/bin/bash -e
 
 # This scrip is for building AppImage
-# Please run this scrip in docker image: ubuntu:16.04
-# E.g: docker run --rm -v `git rev-parse --show-toplevel`:/build ubuntu:16.04 /build/.github/workflows/build_appimage.sh
+# Please run this scrip in docker image: ubuntu:18.04
+# E.g: docker run --rm -v `git rev-parse --show-toplevel`:/build ubuntu:18.04 /build/.github/workflows/build_appimage.sh
 # If you need keep store build cache in docker volume, just like:
 #   $ docker volume create qbee-cache
-#   $ docker run --rm -v `git rev-parse --show-toplevel`:/build -v qbee-cache:/var/cache/apt -v qbee-cache:/usr/src ubuntu:16.04 /build/.github/workflows/build_appimage.sh
+#   $ docker run --rm -v `git rev-parse --show-toplevel`:/build -v qbee-cache:/var/cache/apt -v qbee-cache:/usr/src ubuntu:18.04 /build/.github/workflows/build_appimage.sh
 # Artifacts will copy to the same directory.
 
 set -o pipefail
 
 # match qt version prefix. E.g 5 --> 5.15.2, 5.12 --> 5.12.10
 export QT_VER_PREFIX="6"
-export LIBTORRENT_BRANCH="RC_2_0"
+export LIBTORRENT_BRANCH="RC_1_2"
 
+rm -f /etc/apt/sources.list.d/*.list*
 # Ubuntu mirror for local building
 if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
   source /etc/os-release
@@ -33,11 +34,13 @@ rm -f /etc/apt/apt.conf.d/*
 echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' >/etc/apt/apt.conf.d/01keep-debs
 echo -e 'Acquire::https::Verify-Peer "false";\nAcquire::https::Verify-Host "false";' >/etc/apt/apt.conf.d/99-trust-https
 
+# Since cmake 3.23.0 CMAKE_INSTALL_LIBDIR will force set to lib/<multiarch-tuple> on Debian
+echo '/usr/local/lib/x86_64-linux-gnu' >/etc/ld.so.conf.d/x86_64-linux-gnu-local.conf
+
 apt update
 apt install -y software-properties-common apt-transport-https
-apt-add-repository -y ppa:savoury1/backports
-apt-add-repository -y ppa:savoury1/toolchain
-add-apt-repository -y ppa:savoury1/display
+apt-add-repository -yn ppa:savoury1/backports
+add-apt-repository -yn ppa:savoury1/display
 
 if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
   sed -i 's@http://ppa.launchpad.net@https://launchpad.proxy.ustclug.org@' /etc/apt/sources.list.d/*.list
@@ -56,7 +59,6 @@ apt install -y \
   libxcb1-dev \
   libicu-dev \
   libgtk2.0-dev \
-  g++-8 \
   build-essential \
   libgl1-mesa-dev \
   libfontconfig1-dev \
@@ -84,8 +86,8 @@ apt install -y \
   libxkbcommon-dev \
   libxkbcommon-x11-dev \
   libwayland-dev \
-  libwayland-egl-backend-dev
-# libgtk-3-dev
+  libwayland-egl-backend-dev \
+  g++-8
 
 apt autoremove --purge -y
 # make gcc-8 as default gcc
@@ -192,7 +194,9 @@ rm -fr CMakeCache.txt CMakeFiles
   -no-eglfs \
   -no-feature-testlib \
   -no-feature-vnc \
-  -feature-optimize_full
+  -feature-optimize_full \
+  -nomake examples \
+  -nomake tests
 cmake --build . --parallel
 cmake --install .
 export QT_BASE_DIR="$(ls -rd /usr/local/Qt-* | head -1)"
@@ -216,9 +220,11 @@ fi
 cd "/usr/src/qttools-${qt_ver}"
 rm -fr CMakeCache.txt
 "${QT_BASE_DIR}/bin/qt-configure-module" .
+cat config.summary
 cmake --build . --parallel
 cmake --install .
 
+# Remove qt-wayland until next release: https://bugreports.qt.io/browse/QTBUG-104318
 # qt-wayland
 if [ ! -f "/usr/src/qtwayland-${qt_ver}/.unpack_ok" ]; then
   qtwayland_url="https://download.qt.io/official_releases/qt/${qt_major_ver}/${qt_ver}/submodules/qtwayland-everywhere-src-${qt_ver}.tar.xz"
@@ -228,6 +234,7 @@ fi
 cd "/usr/src/qtwayland-${qt_ver}"
 rm -fr CMakeCache.txt
 "${QT_BASE_DIR}/bin/qt-configure-module" .
+cat config.summary
 cmake --build . --parallel
 cmake --install .
 
@@ -267,17 +274,25 @@ fi
 
 # build libtorrent-rasterbar
 echo "libtorrent-rasterbar branch: ${LIBTORRENT_BRANCH}"
+libtorrent_git_url="https://github.com/arvidn/libtorrent.git"
+if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
+  libtorrent_git_url="https://ghproxy.com/${libtorrent_git_url}"
+fi
 if [ ! -d "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/" ]; then
-  libtorrent_git_url="https://github.com/arvidn/libtorrent.git"
-  if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
-    libtorrent_git_url="https://ghproxy.com/${libtorrent_git_url}"
-  fi
   retry git clone --depth 1 --recursive --shallow-submodules --branch "${LIBTORRENT_BRANCH}" \
     "${libtorrent_git_url}" \
     "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
 fi
 cd "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
-git pull
+if ! git pull; then
+  # if pull failed, retry clone the repository.
+  cd /
+  rm -fr "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
+  retry git clone --depth 1 --recursive --shallow-submodules --branch "${LIBTORRENT_BRANCH}" \
+    "${libtorrent_git_url}" \
+    "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
+  cd "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
+fi
 rm -fr build/CMakeCache.txt
 cmake \
   -B build \
@@ -322,6 +337,27 @@ export XDG_DATA_DIRS="\${this_dir}/usr/share:\${XDG_DATA_DIRS}:/usr/share:/usr/l
 export QT_QPA_PLATFORMTHEMES=gtk2
 export QT_STYLE_OVERRIDE=qt6gtk2
 
+# Find the system certificates location
+# https://gitlab.com/probono/platformissues/blob/master/README.md#certificates
+possible_locations=(
+  "/etc/ssl/certs/ca-certificates.crt"                # Debian/Ubuntu/Gentoo etc.
+  "/etc/pki/tls/certs/ca-bundle.crt"                  # Fedora/RHEL
+  "/etc/ssl/ca-bundle.pem"                            # OpenSUSE
+  "/etc/pki/tls/cacert.pem"                           # OpenELEC
+  "/etc/ssl/certs"                                    # SLES10/SLES11, https://golang.org/issue/12139
+  "/usr/share/ca-certs/.prebuilt-store/"              # Clear Linux OS; https://github.com/knapsu/plex-media-player-appimage/issues/17#issuecomment-437710032
+  "/system/etc/security/cacerts"                      # Android
+  "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem" # CentOS/RHEL 7
+  "/etc/ssl/cert.pem"                                 # Alpine Linux
+)
+
+for location in "\${possible_locations[@]}"; do
+  if [ -r "\${location}" ]; then
+    export SSL_CERT_FILE="\${location}"
+    break
+  fi
+done
+
 exec "\${this_dir}/usr/bin/qbittorrent" "\$@"
 EOF
 chmod 755 -v /tmp/qbee/AppDir/AppRun
@@ -362,7 +398,10 @@ exclude_libs=(
   libgdk-3.so.0
   libgdk_pixbuf-2.0.so.0
   libgdk-x11-2.0.so.0
+  libgio-2.0.so.0
+  libglib-2.0.so.0
   libgmodule-2.0.so.0
+  libgobject-2.0.so.0
   libgraphite2.so.3
   libgtk-3.so.0
   libgtk-x11-2.0.so.0
@@ -373,6 +412,9 @@ exclude_libs=(
   libmircore.so.1
   libmirprotobuf.so.3
   libmount.so.1
+  libpango-1.0.so.0
+  libpangocairo-1.0.so.0
+  libpangoft2-1.0.so.0
   libpixman-1.so.0
   libprotobuf-lite.so.9
   libselinux.so.1

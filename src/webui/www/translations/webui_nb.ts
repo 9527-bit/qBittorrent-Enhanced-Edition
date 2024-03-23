@@ -571,6 +571,10 @@
         <source>RSS</source>
         <translation>RSS</translation>
     </message>
+    <message>
+        <source>Filters Sidebar</source>
+        <translation type="vanished">Sidestolpe med filter</translation>
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -1476,6 +1480,22 @@
         <source>Server-side request forgery (SSRF) mitigation:</source>
         <translation>Forebygging av forfalskede forespørsler på tjenersiden (SSRF):</translation>
     </message>
+    <message>
+        <source>Disk queue size:</source>
+        <translation type="vanished">Køstørrelse på disk:</translation>
+    </message>
+    <message>
+        <source>Log performance warnings</source>
+        <translation type="vanished">Varsel om logg-ytelse</translation>
+    </message>
+    <message>
+        <source>Maximum outstanding requests to a single peer:</source>
+        <translation type="vanished">Største antall utestående forespørsler hos én likemann:</translation>
+    </message>
+    <message>
+        <source>Max active checking torrents:</source>
+        <translation type="vanished">Største antall aktive kontroller av torrenter:</translation>
+    </message>
 </context>
 <context>
     <name>PeerListWidget</name>
@@ -2248,8 +2268,12 @@
         <translation>Framdrift</translation>
     </message>
     <message>
+        <source>Total Size</source>
+        <translation type="vanished">Total størrelse</translation>
+    </message>
+    <message>
         <source>Size</source>
-        <translation>Størrelse</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

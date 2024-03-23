@@ -571,6 +571,10 @@
         <source>RSS</source>
         <translation>RSS</translation>
     </message>
+    <message>
+        <source>Filters Sidebar</source>
+        <translation type="vanished">Filtru sāna josla</translation>
+    </message>
 </context>
 <context>
     <name>OptionsDialog</name>
@@ -1476,6 +1480,14 @@
         <source>Server-side request forgery (SSRF) mitigation:</source>
         <translation>Servera puses pieprasījumu viltošanas (SSRF) aizsardzība:</translation>
     </message>
+    <message>
+        <source>Log performance warnings</source>
+        <translation type="vanished">Reģistrēt darbības brīdinājumus</translation>
+    </message>
+    <message>
+        <source>Max active checking torrents:</source>
+        <translation type="vanished">Atļautais aktīvo pārbaužu skaits:</translation>
+    </message>
 </context>
 <context>
     <name>PeerListWidget</name>
@@ -2248,8 +2260,12 @@
         <translation>Progress</translation>
     </message>
     <message>
+        <source>Total Size</source>
+        <translation type="vanished">Kopējais izmērs</translation>
+    </message>
+    <message>
         <source>Size</source>
-        <translation>Izmērs</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

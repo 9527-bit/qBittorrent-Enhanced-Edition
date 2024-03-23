@@ -2249,7 +2249,7 @@
     </message>
     <message>
         <source>Size</source>
-        <translation>Størrelse</translation>
+        <translation type="unfinished" />
     </message>
 </context>
 <context>

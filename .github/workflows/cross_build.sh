@@ -1,18 +1,18 @@
 #!/bin/bash -e
 
 # This scrip is for static cross compiling
-# Please run this scrip in docker image: ubuntu:20.04
-# E.g: docker run --rm -v `git rev-parse --show-toplevel`:/build ubuntu:20.04 /build/.github/workflows/cross_build.sh
+# Please run this scrip in docker image: abcfy2/muslcc-toolchain-ubuntu:${CROSS_HOST}
+# E.g: docker run --rm -v `git rev-parse --show-toplevel`:/build abcfy2/muslcc-toolchain-ubuntu:arm-linux-musleabi /build/.github/workflows/cross_build.sh
 # If you need keep store build cache in docker volume, just like:
 #   $ docker volume create qbee-nox-cache
-#   $ docker run --rm -v `git rev-parse --show-toplevel`:/build -v qbee-nox-cache:/var/cache/apt -v qbee-nox-cache:/usr/src ubuntu:20.04 /build/.github/workflows/cross_build.sh
+#   $ docker run --rm -v `git rev-parse --show-toplevel`:/build -v qbee-nox-cache:/var/cache/apt -v qbee-nox-cache:/usr/src abcfy2/muslcc-toolchain-ubuntu:arm-linux-musleabi /build/.github/workflows/cross_build.sh
 # Artifacts will copy to the same directory.
 
 set -o pipefail
 
 # match qt version prefix. E.g 5 --> 5.15.2, 5.12 --> 5.12.10
 export QT_VER_PREFIX="6"
-export LIBTORRENT_BRANCH="RC_2_0"
+export LIBTORRENT_BRANCH="RC_1_2"
 
 # Ubuntu mirror for local building
 if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
@@ -49,8 +49,6 @@ apt install -y \
   python3-lxml \
   python3-pip
 
-# value from: https://musl.cc/ (without -cross or -native)
-export CROSS_HOST="${CROSS_HOST:-arm-linux-musleabi}"
 # use zlib-ng instead of zlib by default
 USE_ZLIB_NG=${USE_ZLIB_NG:-1}
 
@@ -83,9 +81,6 @@ i686-*-mingw*)
   ;;
 esac
 
-export QT_VER_PREFIX="6"
-export LIBTORRENT_BRANCH="RC_2_0"
-export CROSS_ROOT="${CROSS_ROOT:-/cross_root}"
 # strip all compiled files by default
 export CFLAGS='-s'
 export CXXFLAGS='-s'
@@ -106,12 +101,10 @@ case "${TARGET_HOST}" in
   ;;
 esac
 
-export PATH="${CROSS_ROOT}/bin:${PATH}"
-export CROSS_PREFIX="${CROSS_ROOT}/${CROSS_HOST}"
 export PKG_CONFIG_PATH="${CROSS_PREFIX}/opt/qt/lib/pkgconfig:${CROSS_PREFIX}/lib/pkgconfig:${CROSS_PREFIX}/share/pkgconfig:${PKG_CONFIG_PATH}"
 SELF_DIR="$(dirname "$(readlink -f "${0}")")"
 
-mkdir -p "${CROSS_ROOT}" "/usr/src"
+mkdir -p "/usr/src"
 
 retry() {
   # max retry 5 times
@@ -171,33 +164,6 @@ prepare_ninja() {
   echo "Ninja version $(ninja --version)"
 }
 
-prepare_toolchain() {
-  if [ -f "/usr/src/${CROSS_HOST}-cross.tgz" ]; then
-    cd /usr/src/
-    if ! curl -ksSL --compressed http://musl.cc/SHA512SUMS | grep "${CROSS_HOST}-cross.tgz" | head -1 | sha512sum -c; then
-      rm -f "/usr/src/${CROSS_HOST}-cross.tgz"
-    fi
-  fi
-  if [ ! -f "/usr/src/${CROSS_HOST}-cross.tgz" ]; then
-    retry curl -kLC- -o "/usr/src/${CROSS_HOST}-cross.tgz" "http://musl.cc/${CROSS_HOST}-cross.tgz"
-  fi
-  tar -zxf "/usr/src/${CROSS_HOST}-cross.tgz" --transform='s|^\./||S' --strip-components=1 -C "${CROSS_ROOT}"
-  # mingw does not contains posix thread support: https://github.com/meganz/mingw-std-threads
-  # libtorrent need this feature, see issue: https://github.com/arvidn/libtorrent/issues/5330
-  if [ x"${TARGET_HOST}" = xWindows ]; then
-    if [ ! -d "/usr/src/mingw-std-threads" ]; then
-      mingw_std_threads_git_url="https://github.com/meganz/mingw-std-threads.git"
-      if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
-        mingw_std_threads_git_url="https://ghproxy.com/${mingw_std_threads_git_url}"
-      fi
-      git clone --depth 1 "${mingw_std_threads_git_url}" "/usr/src/mingw-std-threads"
-    fi
-    cd "/usr/src/mingw-std-threads"
-    git pull
-    cp -fv /usr/src/mingw-std-threads/*.h "${CROSS_PREFIX}/include"
-  fi
-}
-
 prepare_zlib() {
   if [ x"${USE_ZLIB_NG}" = x"1" ]; then
     zlib_ng_latest_tag="$(retry curl -ksSL --compressed https://api.github.com/repos/zlib-ng/zlib-ng/releases \| jq -r "'.[0].tag_name'")"
@@ -239,7 +205,7 @@ prepare_zlib() {
 }
 
 prepare_ssl() {
-  openssl_filename="$(retry curl -ksSL --compressed https://www.openssl.org/source/ \| grep -o "'href=\"openssl-3.*tar.gz\"'" \| grep -o "'[^\"]*.tar.gz'")"
+  openssl_filename="$(retry curl -ksSL --compressed https://www.openssl.org/source/ \| grep -o "'href=\"openssl-3\(\.[0-9]*\)*tar.gz\"'" \| grep -o "'[^\"]*.tar.gz'" \| head -1)"
   openssl_ver="$(echo "${openssl_filename}" | sed -r 's/openssl-(.+)\.tar\.gz/\1/')"
   echo "OpenSSL version ${openssl_ver}"
   if [ ! -f "/usr/src/openssl-${openssl_ver}/.unpack_ok" ]; then
@@ -252,7 +218,7 @@ prepare_ssl() {
     touch "/usr/src/openssl-${openssl_ver}/.unpack_ok"
   fi
   cd "/usr/src/openssl-${openssl_ver}/"
-  ./Configure -static --cross-compile-prefix="${CROSS_HOST}-" --prefix="${CROSS_PREFIX}" "${OPENSSL_COMPILER}"
+  ./Configure -static --openssldir=/etc/ssl --cross-compile-prefix="${CROSS_HOST}-" --prefix="${CROSS_PREFIX}" "${OPENSSL_COMPILER}"
   make -j$(nproc)
   make install_sw
   if [ -f "${CROSS_PREFIX}/lib64/libssl.a" ]; then
@@ -320,6 +286,8 @@ prepare_qt() {
     -no-feature-testlib \
     -no-feature-animation \
     -feature-optimize_full \
+    -nomake examples \
+    -nomake tests \
     ${QT_BASE_EXTRA_CONF} \
     -device-option "CROSS_COMPILE=${CROSS_HOST}-" \
     -- \
@@ -337,17 +305,25 @@ prepare_qt() {
 
 prepare_libtorrent() {
   echo "libtorrent-rasterbar branch: ${LIBTORRENT_BRANCH}"
+  libtorrent_git_url="https://github.com/arvidn/libtorrent.git"
+  if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
+    libtorrent_git_url="https://ghproxy.com/${libtorrent_git_url}"
+  fi
   if [ ! -d "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/" ]; then
-    libtorrent_git_url="https://github.com/arvidn/libtorrent.git"
-    if [ x"${USE_CHINA_MIRROR}" = x1 ]; then
-      libtorrent_git_url="https://ghproxy.com/${libtorrent_git_url}"
-    fi
     retry git clone --depth 1 --recursive --shallow-submodules --branch "${LIBTORRENT_BRANCH}" \
       "${libtorrent_git_url}" \
       "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
   fi
   cd "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
-  git pull
+  if ! git pull; then
+    # if pull failed, retry clone the repository.
+    cd /
+    rm -fr "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
+    retry git clone --depth 1 --recursive --shallow-submodules --branch "${LIBTORRENT_BRANCH}" \
+      "${libtorrent_git_url}" \
+      "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
+    cd "/usr/src/libtorrent-rasterbar-${LIBTORRENT_BRANCH}/"
+  fi
   rm -fr build/CMakeCache.txt
   # TODO: solve mingw build
   if [ x"${TARGET_HOST}" = xWindows ]; then
@@ -411,7 +387,6 @@ build_qbittorrent() {
 
 prepare_cmake
 prepare_ninja
-prepare_toolchain
 prepare_zlib
 prepare_ssl
 prepare_boost
